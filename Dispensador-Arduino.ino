@@ -1,3 +1,7 @@
+/* LCD pins
+ Board I2C / TWI pins
+Uno       =   A4 (SDA), A5 (SCL)
+*/
 #include <virtuabotixRTC.h>
 #include <IRremote.h>
 #include <LiquidCrystal_I2C.h>
@@ -5,26 +9,29 @@ LiquidCrystal_I2C lcd (0x27,16,2)  ; // si no te sale con esta direccion  puedes
                    //clock,dat,rst
 virtuabotixRTC myRTC(5, 6, 4); 
 //Begin: Variables Globales
-int alarm[2][1];
+int TIME[3];
+int alarm[3][2]={{0,0},{0,0},{0,0}};
 int receptor = 3; //pin de recepción del ardino para el control infrarrojo
+int aux=0; //Variable auxiliar para el control de ciertas opciones
+int led=A3;
 //Botones del control remoto:
-unsigned long b0= 0xFF9867;
-unsigned long b1= 0xFFA25D;
-unsigned long b2 = 0xFF629D;
-unsigned long b3 = 0xFFE21D;
-unsigned long b4= 0xFF22DD;
-unsigned long b5 = 0xFF02FD;
-unsigned long b6 = 0xFFC23D;
-unsigned long b7 = 0xFFE01F;
-unsigned long b8 = 0xFFA857;
-unsigned long b9 = 0xFF906F;
-unsigned long bGato = 0xFF6897;
-unsigned long bAsterisco = 0xFFB04F;
-unsigned long Bok = 0xFF38C7;
-unsigned long bArriba = 0xFF18E7;
-unsigned long bAbajo = 0xFF4AB5;
-unsigned long bDerecha = 0xFF5AA5;
-unsigned long bIzquierda = 0xFF10EF;
+const unsigned long b0= 0xFF9867;
+const unsigned long b1= 0xFFA25D;
+const unsigned long b2 = 0xFF629D;
+const unsigned long b3 = 0xFFE21D;
+const unsigned long b4= 0xFF22DD;
+const unsigned long b5 = 0xFF02FD;
+const unsigned long b6 = 0xFFC23D;
+const unsigned long b7 = 0xFFE01F;
+const unsigned long b8 = 0xFFA857;
+const unsigned long b9 = 0xFF906F;
+const unsigned long bAsterisco = 0xFF6897;
+const unsigned long bGato = 0xFFB04F;
+const unsigned long Bok = 0xFF38C7;
+const unsigned long bArriba = 0xFF18E7;
+const unsigned long bAbajo = 0xFF4AB5;
+const unsigned long bDerecha = 0xFF5AA5;
+const unsigned long bIzquierda = 0xFF10EF;
 //End: Variables Globales
 
 //begin: Incialización de puertos;
@@ -43,35 +50,208 @@ void TimeSetup(){
   lcd.print("Cambiar hora y");
   lcd.setCursor(0,1);
   lcd.print("fecha? 1.Si/2.No");
-  int opc=0;
-  while(true){
+  //***************
+   while(true){
+    if(irrecv.decode(&codigo)){
     Serial.println(codigo.value,HEX);
     if(codigo.value==b1){
-      opc=1;
+      setTime();
+      break;
+      }
+    if(codigo.value==b2){break;}
+    delay(50);
+    irrecv.resume();
+    }
+   }
+  //**************
+  lcd.clear();
+  lcd.setCursor(0,0);
+  delay(1000);
+  }
+
+void setTime(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Hora: 00:00");
+  lcd.setCursor(0,1);
+  lcd.print("Ok para Guardar");
+  lcd.setCursor(6,0);
+  lcd.blink();
+  delay(1000);
+  GetTime();       // ss,   mm,     hh,    #D, d, m, y
+  myRTC.setDS1302Time(00, TIME[1], TIME[0], 0, 1, 1, 2019);
+  lcd.clear();
+}
+
+void GetTime(){
+  aux=6;
+  int num;
+  int Dh=0, Uh=0, Dm=0, Um=0;
+  irrecv.resume();
+  //***************
+   while(true){
+    Serial.println(aux); 
+    if(irrecv.decode(&codigo)){
+    Serial.print(codigo.value,HEX);
+    if(codigo.value==Bok){
+      TIME[0]=Dh+Uh;
+      TIME[1]=Dm+Um;
+      lcd.noBlink();
       break;
     }
-    if(codigo.value==b2){
+    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3 ||codigo.value==b4 || codigo.value==b5 || codigo.value==b6 ||codigo.value==b7 || codigo.value==b8 || codigo.value==b9 ||codigo.value==b0){
+       num=toNum(codigo.value);
+       lcd.print(String(toNum(num)));
+       if((aux==6 && num>2) || (aux==9 && num>5)){
+        lcd.setCursor(aux,0);
+        lcd.print("0"); 
+       }else{
+               if(aux==6){
+                  Dh=toNum(codigo.value)*10;
+               }
+               if(aux==7){
+                Uh = toNum(codigo.value);
+                }
+                if(aux==9){
+                  Dm=toNum(codigo.value)*10;
+               }
+               if(aux==10){
+                  Um = toNum(codigo.value);
+                }
+       }
+       lcd.setCursor(aux,0);
+    }
+    if(codigo.value==bDerecha){
+       aux++; 
+       if(aux==8)
+          aux=9;
+       lcd.setCursor(aux,0);
+    }
+    if(codigo.value==bIzquierda){
+       aux--; 
+       if(aux==8)
+          aux=7;
+       lcd.setCursor(aux,0);
+    }
+       if(aux==11){
+        Serial.println("Entre Aqui");
+        delay(5000);
+          aux=10;
+          lcd.setCursor(aux,0); }
+       if(aux==5){
+          aux=6; 
+          lcd.setCursor(aux,0);
+       }
+    
+    delay(50);
+    irrecv.resume();
+    }
+   }
+  //**************
+  }
+
+int toNum(unsigned long code){
+  int c;
+  switch(code){
+    case b1:
+      c=1;
+      break;
+    case b2:
+      c=2;
+      break;
+    case b3:
+      c=3;
+      break;
+    case b4:
+      c=4;
+      break;
+    case b5:
+      c=5;
+      break;
+    case b6:
+      c=6;
+      break;
+    case b7:
+      c=7;
+      break;
+    case b8:
+      c=8;
+      break;
+    case b9:
+      c=9;
+      break;
+    case b0:
+      c=0;
+      break;
+    }
+    return c;
+  }
+
+void setAlarms(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Cambiar Alarma: ");
+  lcd.setCursor(0,1);
+  lcd.print("  1     2    3 ");
+  irrecv.resume();
+  //***************
+   while(true){
+    if(irrecv.decode(&codigo)){
+    Serial.println(codigo.value,HEX);
+    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3){
+      AlarmSetup(toNum(codigo.value));
       break;
     }
     delay(50);
     irrecv.resume();
+    }
+   }
+   lcd.clear();
+  //**************
+  
   }
+ void AlarmSetup(int Alarm){
   lcd.clear();
   lcd.setCursor(0,0);
-  delay(1000);
-  if(opc==1){
-    lcd.print("Modificare");
+  lcd.print("Alarma a las:");
+  lcd.setCursor(0,1);
+  lcd.print(String(alarm[Alarm-1][0]));
+  lcd.print(":");
+  lcd.print(String(alarm[Alarm-1][1]));
+  lcd.print(" 1.Mod 2.Ok");
+  lcd.setCursor(0,1);
+  irrecv.resume();
+  //***************
+   while(true){
+    if(irrecv.decode(&codigo)){
+    Serial.println(codigo.value,HEX);
+    if(codigo.value==b1){
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Hora: 00:00");
+      lcd.setCursor(0,1);
+      lcd.print("Ok para Guardar");
+      lcd.setCursor(6,0);
+      lcd.blink();
+      delay(1000);
+      GetTime();
+      alarm[Alarm-1][0]=TIME[0];//Hora
+      alarm[Alarm-1][1]=TIME[1];//minuto
+      lcd.clear();
+      break;
     }
-  else{
-    lcd.print("Mejor na");
+    if(codigo.value==b2){break;}
+    delay(50);
+    irrecv.resume();
     }
-  }
+   }
+  //**************
+ }
 //End: Funciones creadas para el manejo del tiempo
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);// ss, mm, hh,#D, d, m, y
-    myRTC.setDS1302Time(00, 45, 15, 7, 9, 2, 2019);
+  Serial.begin(9600);
     alarm[0][0]={15};
     alarm[0][1]={46};
   //Ajustes del Control Remoto
@@ -81,6 +261,7 @@ void setup() {
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0,0);
+  myRTC.setDS1302Time(00,01, 16, 0, 1, 1, 2019);
   TimeSetup();
   delay(1000);
 }
@@ -88,14 +269,47 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   myRTC.updateTime();
-  int TIME[6]={myRTC.dayofmonth,myRTC.month,myRTC.year,myRTC.hours,myRTC.minutes,myRTC.seconds};
-  // Se imprime el resultado en el Monitor Serial
+  TIME[0]=myRTC.hours; TIME[1]=myRTC.minutes; TIME[2]=myRTC.seconds;
+  // Begin: Se imprime la hora con formato en la pantalla lcd
+  if((int)TIME[2]==0){lcd.clear();}
   lcd.setCursor(0,0);
-  lcd.print("Tiempo: "+(String)TIME[3]+":"+TIME[4]+":"+TIME[5]);
-  if(alarm[0][0] == TIME[3] && alarm[0][1]== TIME[4] && (int)TIME[5]==0){
+  lcd.print("Tiempo: "+(String)TIME[0]+":");
+        if((int)TIME[1]<10){
+          lcd.print("0"+(String)TIME[1]);
+          }else
+          {
+            lcd.print((String)TIME[1]);
+            }
+        if((int)TIME[2]<10){
+          lcd.print(":0"+(String)TIME[2]);
+          }else
+          {
+            lcd.print(":"+(String)TIME[2]);
+            }
+  // End: Se imprime la hora con formato en la pantalla lcd
+  if(         ((alarm[0][0] == (int)TIME[0]) && (alarm[0][1]== (int)TIME[1]) && (int)TIME[2]==0)     ||   ((alarm[1][0] == (int)TIME[0]) && (alarm[1][1]== (int)TIME[1]) && (int)TIME[2]==0)           ||        ((alarm[2][0] == (int)TIME[0]) && (alarm[2][1]== (int)TIME[1]) && (int)TIME[2]==0)                 ){
+   lcd.setCursor(0,0);
+   lcd.print("Hora de comer");
    lcd.setCursor(0,1);
-   lcd.print("Es hora de la comida");
+   lcd.print("Alimentando");
+   analogWrite(led,255);
+   delay(5000);
+   analogWrite(led,0);
+   lcd.clear();
    }
+   if(irrecv.decode(&codigo)){
+    Serial.println(codigo.value,HEX);
+    if(codigo.value==bGato){
+      setTime();
+      }
+    if(codigo.value==bAsterisco){
+      /*Para las alarmas*/
+      setAlarms();
+      }
+    delay(50);
+    irrecv.resume();
+    }
+   
   // Un pequeño delay para no repetir y leer más facil
   delay(1000);
 }
