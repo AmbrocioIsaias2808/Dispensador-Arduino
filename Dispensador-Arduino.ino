@@ -4,16 +4,22 @@ Uno       =   A4 (SDA), A5 (SCL)
 */
 #include <virtuabotixRTC.h>
 #include <IRremote.h>
+#include <Servo.h>
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd (0x27,16,2)  ; // si no te sale con esta direccion  puedes usar (0x3f,16,2) || (0x27,16,2)  ||(0x20,16,2) 
                    //clock,dat,rst
 virtuabotixRTC myRTC(5, 6, 4); 
 //Begin: Variables Globales
+Servo m1;
+int PINSERVO=2;
+int PULSOMIN=450; // Pulso de 0 grados
+int PULSOMAX=2350; //Pulso de 180 grados
 int TIME[3];
 int alarm[3][2]={{0,0},{0,0},{0,0}};
 int receptor = 3; //pin de recepción del ardino para el control infrarrojo
 int aux=0; //Variable auxiliar para el control de ciertas opciones
 int led=A3;
+int grams=0; //Variable para el control de alimento en gramos
 //Botones del control remoto:
 const unsigned long b0= 0xFF9867;
 const unsigned long b1= 0xFFA25D;
@@ -90,7 +96,6 @@ void GetTime(){
   irrecv.resume();
   //***************
    while(true){
-    Serial.println(aux); 
     if(irrecv.decode(&codigo)){
     Serial.print(codigo.value,HEX);
     if(codigo.value==Bok){
@@ -134,8 +139,6 @@ void GetTime(){
        lcd.setCursor(aux,0);
     }
        if(aux==11){
-        Serial.println("Entre Aqui");
-        delay(5000);
           aux=10;
           lcd.setCursor(aux,0); }
        if(aux==5){
@@ -215,9 +218,7 @@ void setAlarms(){
   lcd.setCursor(0,0);
   lcd.print("Alarma a las:");
   lcd.setCursor(0,1);
-  lcd.print(String(alarm[Alarm-1][0]));
-  lcd.print(":");
-  lcd.print(String(alarm[Alarm-1][1]));
+  showTimeFormat(alarm[Alarm-1][0], alarm[Alarm-1][1]);
   lcd.print(" 1.Mod 2.Ok");
   lcd.setCursor(0,1);
   irrecv.resume();
@@ -247,11 +248,133 @@ void setAlarms(){
    }
   //**************
  }
+
+void showTimeFormat(int hora, int minutos){
+  if(hora<10){
+    lcd.print("0"+(String)hora);
+   }else{
+    lcd.print((String)hora);
+   }
+  lcd.print(":");
+  if(minutos<10){
+    lcd.print("0"+(String)minutos);
+   }else{
+    lcd.print((String)minutos);
+   }
+}
 //End: Funciones creadas para el manejo del tiempo
+//Begin: funciones para el control de alimento
+void  setGrams(){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Comida Disp.:");
+    lcd.setCursor(0,1);
+    lcd.print((String)grams+"g 1.Mod 2.Ok");
+    irrecv.resume();
+    //***************
+   while(true){
+    if(irrecv.decode(&codigo)){
+    Serial.println(codigo.value,HEX);
+    if(codigo.value==b1){
+     lcd.clear();
+     lcd.setCursor(0,0);
+     lcd.print("Gramos: 0000g");
+     lcd.setCursor(0,1);
+     lcd.print("Ok para Guardar");
+     lcd.setCursor(8,0);
+      lcd.blink();
+      delay(1000);
+     getGrams();
+      break;
+    }
+    if(codigo.value==b2){break;}
+    delay(50);
+    irrecv.resume();
+    }
+   }
+   lcd.clear();
+  //**************
+  }
+
+ void getGrams(){
+  aux=8;
+  int GM=0, GC=0, GD=0, GU=0;
+  irrecv.resume();
+  //***************
+   while(true){
+    if(irrecv.decode(&codigo)){
+    Serial.print(codigo.value,HEX);
+    if(codigo.value==Bok){
+      grams=0;
+      grams=grams+GM+GC+GD+GU;
+      lcd.noBlink();
+      Serial.print(grams);
+      break;
+    }
+    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3 ||codigo.value==b4 || codigo.value==b5 || codigo.value==b6 ||codigo.value==b7 || codigo.value==b8 || codigo.value==b9 ||codigo.value==b0){
+       lcd.print(String(toNum(codigo.value)));
+
+               if(aux==8){
+                  GM=toNum(codigo.value)*1000;
+               }
+               if(aux==9){
+                GC = toNum(codigo.value)*100;
+                }
+                if(aux==10){
+                  GD=toNum(codigo.value)*10;
+               }
+               if(aux==11){
+                  GU = toNum(codigo.value);
+                }
+       
+       lcd.setCursor(aux,0);
+    }
+    if(codigo.value==bDerecha){
+       aux++; 
+       lcd.setCursor(aux,0);
+    }
+    if(codigo.value==bIzquierda){
+       aux--; 
+       lcd.setCursor(aux,0);
+    }
+       if(aux==12){
+          aux=11;
+          lcd.setCursor(aux,0); }
+       if(aux==7){
+          aux=8; 
+          lcd.setCursor(aux,0);
+       }
+    
+    delay(50);
+    irrecv.resume();
+    }
+   }
+  //**************
+ }
+
+void gramsCheck(){
+  delay(grams);  
+}
+//End: funciones para el control de alimento
+//Begin: Funciones para el manejo de servo
+void alimentar(){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Hora de comer");
+  lcd.setCursor(0,1);
+  lcd.print("Alimentando");
+  m1.write(50);
+  gramsCheck();
+  m1.write(0);
+  lcd.clear();
+  }
+//End:  Funciones para el manejo de servo
 
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  m1.attach(PINSERVO,PULSOMIN,PULSOMAX);
+  m1.write(0);
     alarm[0][0]={15};
     alarm[0][1]={46};
   //Ajustes del Control Remoto
@@ -261,7 +384,7 @@ void setup() {
   lcd.backlight();
   lcd.clear();
   lcd.setCursor(0,0);
-  myRTC.setDS1302Time(00,01, 16, 0, 1, 1, 2019);
+  myRTC.setDS1302Time(00,45, 15, 0, 1, 1, 2019);
   TimeSetup();
   delay(1000);
 }
@@ -273,29 +396,18 @@ void loop() {
   // Begin: Se imprime la hora con formato en la pantalla lcd
   if((int)TIME[2]==0){lcd.clear();}
   lcd.setCursor(0,0);
-  lcd.print("Tiempo: "+(String)TIME[0]+":");
-        if((int)TIME[1]<10){
-          lcd.print("0"+(String)TIME[1]);
-          }else
-          {
-            lcd.print((String)TIME[1]);
-            }
-        if((int)TIME[2]<10){
-          lcd.print(":0"+(String)TIME[2]);
-          }else
-          {
-            lcd.print(":"+(String)TIME[2]);
-            }
+  lcd.print("Tiempo: ");
+  showTimeFormat(TIME[0],TIME[1]);
+  lcd.print(":");
+  if((int)TIME[2]<10){
+  lcd.print("0"+(String)TIME[2]);
+  }else
+  {
+  lcd.print((String)TIME[2]);
+  }
   // End: Se imprime la hora con formato en la pantalla lcd
   if(         ((alarm[0][0] == (int)TIME[0]) && (alarm[0][1]== (int)TIME[1]) && (int)TIME[2]==0)     ||   ((alarm[1][0] == (int)TIME[0]) && (alarm[1][1]== (int)TIME[1]) && (int)TIME[2]==0)           ||        ((alarm[2][0] == (int)TIME[0]) && (alarm[2][1]== (int)TIME[1]) && (int)TIME[2]==0)                 ){
-   lcd.setCursor(0,0);
-   lcd.print("Hora de comer");
-   lcd.setCursor(0,1);
-   lcd.print("Alimentando");
-   analogWrite(led,255);
-   delay(5000);
-   analogWrite(led,0);
-   lcd.clear();
+   alimentar();
    }
    if(irrecv.decode(&codigo)){
     Serial.println(codigo.value,HEX);
@@ -305,6 +417,10 @@ void loop() {
     if(codigo.value==bAsterisco){
       /*Para las alarmas*/
       setAlarms();
+      }
+    if(codigo.value==b0){
+      /*Para las alarmas*/
+      setGrams();
       }
     delay(50);
     irrecv.resume();
