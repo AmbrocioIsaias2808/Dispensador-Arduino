@@ -6,6 +6,8 @@ Uno       =   A4 (SDA), A5 (SCL)
 #include <IRremote.h>
 #include <Servo.h>
 #include <LiquidCrystal_I2C.h>
+#include "HX711.h"
+HX711 balanza;
 LiquidCrystal_I2C lcd (0x27,16,2)  ; // si no te sale con esta direccion  puedes usar (0x3f,16,2) || (0x27,16,2)  ||(0x20,16,2) 
                    //clock,dat,rst
 virtuabotixRTC myRTC(5, 6, 4); 
@@ -18,7 +20,7 @@ int TIME[3];
 int alarm[3][2]={{0,0},{0,0},{0,0}};
 int receptor = 3; //pin de recepción del ardino para el control infrarrojo
 int aux=0; //Variable auxiliar para el control de ciertas opciones
-int led=A3;
+int buzzer=10;
 int grams=0; //Variable para el control de alimento en gramos
 //Botones del control remoto:
 const unsigned long b0= 0xFF9867;
@@ -38,6 +40,8 @@ const unsigned long bArriba = 0xFF18E7;
 const unsigned long bAbajo = 0xFF4AB5;
 const unsigned long bDerecha = 0xFF5AA5;
 const unsigned long bIzquierda = 0xFF10EF;
+const int LOADCELL_DOUT_PIN = 8;
+const int LOADCELL_SCK_PIN = 9;
 //End: Variables Globales
 
 //begin: Incialización de puertos;
@@ -353,7 +357,11 @@ void  setGrams(){
  }
 
 void gramsCheck(){
-  delay(grams);  
+  while(balanza.get_units(20)<grams){
+  Serial.print("Peso: ");
+  Serial.print(balanza.get_units(20),2);
+  Serial.println(" g");
+  }
 }
 //End: funciones para el control de alimento
 //Begin: Funciones para el manejo de servo
@@ -369,6 +377,16 @@ void alimentar(){
   lcd.clear();
   }
 //End:  Funciones para el manejo de servo
+
+void bip(){
+  digitalWrite(buzzer,HIGH);
+  delay(500);
+  digitalWrite(buzzer,LOW); 
+  delay(500); 
+  digitalWrite(buzzer,HIGH);
+  delay(500);
+  digitalWrite(buzzer,LOW);
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -386,6 +404,11 @@ void setup() {
   lcd.setCursor(0,0);
   myRTC.setDS1302Time(00,45, 15, 0, 1, 1, 2019);
   TimeSetup();
+  balanza.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
+  balanza.read();
+  balanza.set_scale(234.4055323); // Establecemos la escala
+  balanza.tare(20);  //El peso actual es considerado Tara. 
+  pinMode(buzzer , OUTPUT);  //definir pin como salida
   delay(1000);
 }
 
@@ -407,7 +430,9 @@ void loop() {
   }
   // End: Se imprime la hora con formato en la pantalla lcd
   if(         ((alarm[0][0] == (int)TIME[0]) && (alarm[0][1]== (int)TIME[1]) && (int)TIME[2]==0)     ||   ((alarm[1][0] == (int)TIME[0]) && (alarm[1][1]== (int)TIME[1]) && (int)TIME[2]==0)           ||        ((alarm[2][0] == (int)TIME[0]) && (alarm[2][1]== (int)TIME[1]) && (int)TIME[2]==0)                 ){
+   bip();
    alimentar();
+   bip();
    }
    if(irrecv.decode(&codigo)){
     Serial.println(codigo.value,HEX);
