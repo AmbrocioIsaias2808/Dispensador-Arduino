@@ -4,6 +4,7 @@ Uno       =   A4 (SDA), A5 (SCL)
 */
 #include <virtuabotixRTC.h>
 #include <IRremote.h>
+#include <EEPROM.h>
 #include <Servo.h>
 #include <LiquidCrystal_I2C.h>
 #include "HX711.h"
@@ -242,6 +243,18 @@ void setAlarms(){
       GetTime();
       alarm[Alarm-1][0]=TIME[0];//Hora
       alarm[Alarm-1][1]=TIME[1];//minuto
+      if(Alarm==1){
+         EEPROM.put(1,TIME[0]);
+         EEPROM.put(2,TIME[1]);
+        }
+      if(Alarm==2){
+        EEPROM.put(3,TIME[0]);
+        EEPROM.put(4,TIME[1]);
+        }
+      if(Alarm==3){
+        EEPROM.put(5,TIME[0]);
+        EEPROM.put(6,TIME[1]);
+        }
       lcd.clear();
       break;
     }
@@ -311,6 +324,7 @@ void  setGrams(){
     if(codigo.value==Bok){
       grams=0;
       grams=grams+GM+GC+GD+GU;
+      EEPROM.put(7,grams);
       lcd.noBlink();
       Serial.print(grams);
       break;
@@ -388,13 +402,29 @@ void bip(){
   digitalWrite(buzzer,LOW);
 }
 
+void InicializeData(){
+  int eeAddress=0;
+  for (int alarma=0;alarma<3;alarma++){
+    eeAddress++;
+    for(int hora=0; hora<2; hora++){ 
+      alarm[alarma][hora]=EEPROM.read(eeAddress);
+      if(hora<1){eeAddress++;}
+    }
+  }
+  grams=EEPROM.get(7,  grams); 
+}
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  if(EEPROM.read(0)==255){
+    EEPROM.write(0,0);
+  }else{
+    Serial.println("Not necessary");  
+  }
   m1.attach(PINSERVO,PULSOMIN,PULSOMAX);
   m1.write(0);
-    alarm[0][0]={15};
-    alarm[0][1]={46};
+  InicializeData();
   //Ajustes del Control Remoto
   irrecv.enableIRIn(); //habilito el sensor
   //Ajustes de la pantalla led:
