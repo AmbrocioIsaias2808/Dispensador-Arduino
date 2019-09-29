@@ -371,9 +371,11 @@ void  setGrams(){
  }
 
 void gramsCheck(){
-  while(balanza.get_units(20)<grams){
+  int peso=0;
+  while(peso<grams){
+  peso=balanza.get_units(3);
   Serial.print("Peso: ");
-  Serial.print(balanza.get_units(20),2);
+  Serial.print(peso);
   Serial.println(" g");
   }
 }
