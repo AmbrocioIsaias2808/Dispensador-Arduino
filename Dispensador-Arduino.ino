@@ -23,6 +23,7 @@ int receptor = 3; //pin de recepción del ardino para el control infrarrojo
 int aux=0; //Variable auxiliar para el control de ciertas opciones
 int buzzer=10;
 int grams=0; //Variable para el control de alimento en gramos
+
 //Botones del control remoto:
 const unsigned long b0= 0xFF9867;
 const unsigned long b1= 0xFFA25D;
@@ -373,11 +374,12 @@ void  setGrams(){
 void gramsCheck(){
   int peso=0;
   while(peso<grams){
-  peso=balanza.get_units(3);
+  peso=balanza.get_units(1);
   Serial.print("Peso: ");
   Serial.print(peso);
   Serial.println(" g");
   }
+  m1.write(0);
 }
 //End: funciones para el control de alimento
 //Begin: Funciones para el manejo de servo
@@ -387,9 +389,8 @@ void alimentar(){
   lcd.print("Hora de comer");
   lcd.setCursor(0,1);
   lcd.print("Alimentando");
-  m1.write(50);
+  m1.write(60);
   gramsCheck();
-  m1.write(0);
   lcd.clear();
   }
 //End:  Funciones para el manejo de servo
