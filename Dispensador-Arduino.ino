@@ -2,26 +2,27 @@
  Board I2C / TWI pins
 Uno       =   A4 (SDA), A5 (SCL)
 */
-#include <virtuabotixRTC.h>
-#include <IRremote.h>
-#include <EEPROM.h>
-#include <Servo.h>
-#include <LiquidCrystal_I2C.h>
-#include "HX711.h"
-HX711 balanza;
+#include <virtuabotixRTC.h> //Libreria para manejar el modulo de reloj
+#include <IRremote.h> //Libreria para controlar el modulo Infrarrojo
+#include <EEPROM.h> //Libreria para acceder a los sectores de memoria de la EEROM
+#include <Servo.h> //Libreria para manejar el servo
+#include <LiquidCrystal_I2C.h> //Libreria para manejar el LcD
+#include "HX711.h" //Libreria para manejar el modulo de carga
+HX711 balanza; // Objeto que referencia al modulo de carga
+//Objeto que referencia a la pantalla lcd
 LiquidCrystal_I2C lcd (0x27,16,2)  ; // si no te sale con esta direccion  puedes usar (0x3f,16,2) || (0x27,16,2)  ||(0x20,16,2) 
                    //clock,dat,rst
-virtuabotixRTC myRTC(5, 6, 4); 
+virtuabotixRTC myRTC(5, 6, 4); //Instancio al objeto que referenciara a mi reloj.
 //Begin: Variables Globales
-Servo m1;
-int PINSERVO=2;
+Servo m1; //Intancio al objeto que referencia a mi servomotor
+int PINSERVO=2;   //Pin de datos del servo
 int PULSOMIN=450; // Pulso de 0 grados
 int PULSOMAX=2350; //Pulso de 180 grados
-int TIME[3];
-int alarm[3][2]={{0,0},{0,0},{0,0}};
+int TIME[3];  //Variable donde se almacenara el tiempo en tiempo de ejecución en formato HH:MM:SS
+int alarm[3][2]={{0,0},{0,0},{0,0}}; //Arreglo donde almacenar las alarmas en formatos de HH:MM
 int receptor = 3; //pin de recepción del ardino para el control infrarrojo
 int aux=0; //Variable auxiliar para el control de ciertas opciones
-int buzzer=10;
+int buzzer=10; //Pin de control del buzzer
 int grams=0; //Variable para el control de alimento en gramos
 
 //Botones del control remoto:
@@ -42,8 +43,8 @@ const unsigned long bArriba = 0xFF18E7;
 const unsigned long bAbajo = 0xFF4AB5;
 const unsigned long bDerecha = 0xFF5AA5;
 const unsigned long bIzquierda = 0xFF10EF;
-const int LOADCELL_DOUT_PIN = 8;
-const int LOADCELL_SCK_PIN = 9;
+const int LOADCELL_DOUT_PIN = 8; //Pin de datos de la celda de carga **
+const int LOADCELL_SCK_PIN = 9; //Pin de reloj de la celda de carga **
 //End: Variables Globales
 
 //begin: Incialización de puertos;
@@ -55,24 +56,25 @@ decode_results codigo; //almacena el codigo hex recibido del control
 //Funciones para el manejo del control remoto
 
 //Begin: Funciones creadas para el manejo del tiempo
-void TimeSetup(){
-  lcd.print("entre");
+void TimeSetup(){ //Función para establecer el tiempo del reloj al inicio del sistema
+  lcd.print("Inicializando...");
   delay(1000);
+  lcd.clear();
   lcd.setCursor(0,0);
-  lcd.print("Cambiar hora y");
+  lcd.print("Ajustar hora?");
   lcd.setCursor(0,1);
-  lcd.print("fecha? 1.Si/2.No");
+  lcd.print("    1.Si/2.No");
   //***************
-   while(true){
-    if(irrecv.decode(&codigo)){
-    Serial.println(codigo.value,HEX);
-    if(codigo.value==b1){
-      setTime();
-      break;
+   while(true){ //Mientras el bucle este ciclado
+    if(irrecv.decode(&codigo)){ //Si se recibe codigo del control remoto
+    Serial.println(codigo.value,HEX); //Imprimo por serial el codigo numerico recibido
+    if(codigo.value==b1){ //Si el codigo coincide con el boton 1
+      setTime(); //Llamo a la función para guardar la hora en el reloj
+      break; //Salgo del bucle
       }
-    if(codigo.value==b2){break;}
-    delay(50);
-    irrecv.resume();
+    if(codigo.value==b2){break;} //Si el codigo coincide con el boton termino el bucle
+    delay(50); 
+    irrecv.resume(); //Le digo al control que borre el cache y siga escuchando por nuevas entradas.
     }
    }
   //**************
@@ -81,7 +83,7 @@ void TimeSetup(){
   delay(1000);
   }
 
-void setTime(){
+void setTime(){ //Funcion para guardar el tiempo actual
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Hora: 00:00");
@@ -90,50 +92,52 @@ void setTime(){
   lcd.setCursor(6,0);
   lcd.blink();
   delay(1000);
+  //Entro en la función que lee las entradas para ajustar la hora
   GetTime();       // ss,   mm,     hh,    #D, d, m, y
-  myRTC.setDS1302Time(00, TIME[1], TIME[0], 0, 1, 1, 2019);
+  myRTC.setDS1302Time(00, TIME[1], TIME[0], 0, 1, 1, 2019); //Guardo la hora en el formato dado
   lcd.clear();
 }
 
 void GetTime(){
-  aux=6;
-  int num;
-  int Dh=0, Uh=0, Dm=0, Um=0;
-  irrecv.resume();
+  aux=6;  //Variable auxiliar para saber en que columna se encuentra el cursor del lcd
+  int num;   //Variable auxiliar para almacenar el numero tecleado
+  int Dh=0, Uh=0, Dm=0, Um=0; //Variables auxiliares para guardar las D decenas y U unidades de hora o minuto
+  irrecv.resume(); //Pongo a la escucha de nuevas entradas borrando el cache previo
   //***************
-   while(true){
-    if(irrecv.decode(&codigo)){
-    Serial.print(codigo.value,HEX);
-    if(codigo.value==Bok){
-      TIME[0]=Dh+Uh;
-      TIME[1]=Dm+Um;
-      lcd.noBlink();
-      break;
+   while(true){    //Se repite el bucle mientras sea verdadero
+    if(irrecv.decode(&codigo)){ //Si en efecto se lee un codigo
+    Serial.print(codigo.value,HEX); //Imprimo el codigo en pantalla
+    if(codigo.value==Bok){ //Si se presiono el boton de ok 
+      TIME[0]=Dh+Uh; //Guardo en el arreglo de manejo de tiempo en la posicion de horas la suma de Decenas y Unidades de hora
+      TIME[1]=Dm+Um; //Guardo en el arreglo de manejo de tiempo en la posicion de minutos la suma de Decenas y Unidades de minutos
+      lcd.noBlink(); //Establesco que el cursor del lcd deje de parpadear
+      break;  //Rompo el bucle
     }
+    // Si se presiona algun boton numerico
     if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3 ||codigo.value==b4 || codigo.value==b5 || codigo.value==b6 ||codigo.value==b7 || codigo.value==b8 || codigo.value==b9 ||codigo.value==b0){
-       num=toNum(codigo.value);
-       lcd.print(String(toNum(num)));
-       if((aux==6 && num>2) || (aux==9 && num>5)){
-        lcd.setCursor(aux,0);
-        lcd.print("0"); 
-       }else{
-               if(aux==6){
-                  Dh=toNum(codigo.value)*10;
+       num=toNum(codigo.value); //Mando a convertir el codigo hexadecimal del boton en valor numerico
+       lcd.print(String(toNum(num))); // muestro tal numero en pantalla en formato de String
+       if((aux==6 && num>2) || (aux==9 && num>5)){ //Si el numero es mayor que 2 en la posicion 6 (decenas de hora) o mayor que 5 en la posicion 9 
+        lcd.setCursor(aux,0); //En tal posicion de tal fila
+        lcd.print("0"); //Imprimo un cero
+       }else{ //Por el contrario
+               if(aux==6){ //Si es la pocision 6
+                  Dh=toNum(codigo.value)*10; //El codigo hexadecimal convertido en numero multiplicado por 10 lo guardo en Decenas de Hora
                }
-               if(aux==7){
-                Uh = toNum(codigo.value);
+               if(aux==7){ //Si es la pocision 7
+                Uh = toNum(codigo.value); //El codigo hexadecimal convertido en numero lo guardo en Unidades de hora
                 }
-                if(aux==9){
-                  Dm=toNum(codigo.value)*10;
+                if(aux==9){ //Si es la posicion 9
+                  Dm=toNum(codigo.value)*10; //El codigo hexadecimal convertido en numero multiplicado por 10 lo guardo en Decenas de Minuto
                }
-               if(aux==10){
-                  Um = toNum(codigo.value);
+               if(aux==10){ //Si es la posicion 10 
+                  Um = toNum(codigo.value); //El codigo hexadecimal convertido en numero lo guardo en Unidades de Hora
                 }
        }
-       lcd.setCursor(aux,0);
+       lcd.setCursor(aux,0); //Coloco el cursor en la posicion tal
     }
-    if(codigo.value==bDerecha){
-       aux++; 
+    if(codigo.value==bDerecha){ //Si el codigo corresponde el boton de flecha derecha
+       aux++;  //Aumento 
        if(aux==8)
           aux=9;
        lcd.setCursor(aux,0);
@@ -439,7 +443,7 @@ void setup() {
   TimeSetup();
   balanza.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
   balanza.read();
-  balanza.set_scale(234.4055323); // Establecemos la escala
+  balanza.set_scale(241.3971937); // Establecemos la escala
   balanza.tare(20);  //El peso actual es considerado Tara. 
   pinMode(buzzer , OUTPUT);  //definir pin como salida
   delay(1000);
