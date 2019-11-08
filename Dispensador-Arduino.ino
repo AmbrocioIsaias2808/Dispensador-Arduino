@@ -137,32 +137,34 @@ void GetTime(){
        lcd.setCursor(aux,0); //Coloco el cursor en la posicion tal
     }
     if(codigo.value==bDerecha){ //Si el codigo corresponde el boton de flecha derecha
-       aux++;  //Aumento 
-       if(aux==8)
-          aux=9;
-       lcd.setCursor(aux,0);
+       aux++;  //Desplazo el cursor hacia la derecha
+       if(aux==8) //Si la posicion del cursor es == 8
+          aux=9; //Saltamos a la posicion 9 debido a que la posicion 8 son los : en HH:MM
+       lcd.setCursor(aux,0); //Y coloco el cursor donde debe ir
     }
-    if(codigo.value==bIzquierda){
-       aux--; 
-       if(aux==8)
-          aux=7;
-       lcd.setCursor(aux,0);
+    if(codigo.value==bIzquierda){ //Si el codigo corresponde el boton de flecha derecha
+       aux--;  //Desplazo el cursor hacia la izquierda
+       if(aux==8)//Si la posicion del cursor es == 8
+          aux=7; //Saltamos a la posicion 7 debido a que la posicion 8 son los : en HH:MM
+       lcd.setCursor(aux,0); //Y coloco el cursor donde debe ir
     }
-       if(aux==11){
-          aux=10;
-          lcd.setCursor(aux,0); }
-       if(aux==5){
-          aux=6; 
-          lcd.setCursor(aux,0);
+       if(aux==11){ //Si la variable auxiliar para posicionar el cursor avanza hasta la posicion 11
+          aux=10; //Le digo que se quede en la posicion 10 
+          lcd.setCursor(aux,0); } //Y lo posiciono
+     
+       if(aux==5){ //Si la variable auxiliar para posicionar el cursor avanza hasta la posicion 5
+          aux=6; //Le digo que se quede en la posicion 6
+          lcd.setCursor(aux,0);//Y lo posiciono
        }
     
-    delay(50);
-    irrecv.resume();
+    delay(50); //Espero 50 milisegundos
+    irrecv.resume(); //Resumo la escucha de nuevos codigos por parte del sensor IR
     }
    }
   //**************
   }
 
+//Funcion para convertir los codigos hexadecimales recibidos por el sensor IR a valor numerico entero
 int toNum(unsigned long code){
   int c;
   switch(code){
@@ -199,59 +201,65 @@ int toNum(unsigned long code){
     }
     return c;
   }
-
+  
+//Funcion para programar alarmas
 void setAlarms(){
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("Cambiar Alarma: ");
+  lcd.clear(); //Borro el contendio de la lcd
+  lcd.setCursor(0,0); 
+  lcd.print("Cambiar Alarma: "); 
   lcd.setCursor(0,1);
   lcd.print("  1     2    3 ");
   irrecv.resume();
   //***************
-   while(true){
-    if(irrecv.decode(&codigo)){
-    Serial.println(codigo.value,HEX);
-    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3){
-      AlarmSetup(toNum(codigo.value));
-      break;
+   while(true){ //Mientras el while se repita
+    if(irrecv.decode(&codigo)){ //Me mantengo a la escucha de señales por parte del control infrarrojo
+    Serial.println(codigo.value,HEX); //Si lo recibe lo imprimo
+    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3){ //Y si corresponde a los codigos de los botones 1, 2 o 3
+      AlarmSetup(toNum(codigo.value)); //LLamo a la función para modificar la hora de la alarma pasando como parametro el numero de la alarma
+      break; //Rompo el ciclo while
     }
-    delay(50);
-    irrecv.resume();
+    delay(50); //Espero un tiempo
+    irrecv.resume(); //Le digo al sensor IR que borre el cache y se ponga a la escucha de nuevo
     }
    }
-   lcd.clear();
+   lcd.clear(); //Limpio la pantalla
   //**************
   
   }
- void AlarmSetup(int Alarm){
+ void AlarmSetup(int Alarm){  
   lcd.clear();
   lcd.setCursor(0,0);
   lcd.print("Alarma a las:");
   lcd.setCursor(0,1);
-  showTimeFormat(alarm[Alarm-1][0], alarm[Alarm-1][1]);
-  lcd.print(" 1.Mod 2.Ok");
+  showTimeFormat(alarm[Alarm-1][0], alarm[Alarm-1][1]); //Muestro en pantalla la ultima hora programada en la alarma correspondiente
+  lcd.print(" 1.Mod 2.Ok"); //Le pregunto si desea modificarla o dejarla como esta
   lcd.setCursor(0,1);
-  irrecv.resume();
+  irrecv.resume();  //Antes de continuar le digo al sensor que borre el cache y escuche por la respuesta del usuario
   //***************
-   while(true){
-    if(irrecv.decode(&codigo)){
-    Serial.println(codigo.value,HEX);
-    if(codigo.value==b1){
+   while(true){ //Mientras el while se repita
+    if(irrecv.decode(&codigo)){ //Verfico si recibo codigos
+    Serial.println(codigo.value,HEX); //Si, si imprimo
+    if(codigo.value==b1){ //Si el codigo es del boton b1
       lcd.clear();
       lcd.setCursor(0,0);
       lcd.print("Hora: 00:00");
       lcd.setCursor(0,1);
       lcd.print("Ok para Guardar");
       lcd.setCursor(6,0);
-      lcd.blink();
+      lcd.blink(); //Hago las intrucciones anteriores y le indico al lcd que debe parpadear el cursor
       delay(1000);
-      GetTime();
-      alarm[Alarm-1][0]=TIME[0];//Hora
-      alarm[Alarm-1][1]=TIME[1];//minuto
-      if(Alarm==1){
-         EEPROM.put(1,TIME[0]);
-         EEPROM.put(2,TIME[1]);
+      GetTime(); //LLamo a la funcion GetTime para guardar la hora introducida por el usuario
+      //GetTime guarda la hora en la variable TIME[0] y los minutos en TIME[1];
+      alarm[Alarm-1][0]=TIME[0];//Hora:  Por lo tanto en la posicion correspondiente del arreglo alarm guardo el valor de TIME[0]
+      alarm[Alarm-1][1]=TIME[1];//minuto: Por lo tanto en la posicion correspondiente del arreglo alarm guardo el valor de TIME[1]
+      //Ahora de acuerdo al numero de la alarma
+      if(Alarm==1){ //EEPROM: memoria no volatil del Arduino
+         EEPROM.put(1,TIME[0]); //Guardo a su vez en la EEPROM en la posicion correspondiente la hora
+         EEPROM.put(2,TIME[1]);//Guardo a su vez en la EEPROM en la posicion correspondiente el minuto
+                                //De la alarma correspondiente
         }
+
+        //Misma tematica que lo anterior
       if(Alarm==2){
         EEPROM.put(3,TIME[0]);
         EEPROM.put(4,TIME[1]);
@@ -261,52 +269,59 @@ void setAlarms(){
         EEPROM.put(6,TIME[1]);
         }
       lcd.clear();
-      break;
+      break; //Por ultimo rompo el ciclo
     }
-    if(codigo.value==b2){break;}
-    delay(50);
-    irrecv.resume();
+    if(codigo.value==b2){break;} //Si presiono el boton 2 solo rompo el ciclo
+    delay(50); //Espero un momento
+    irrecv.resume(); //Y le digo al sensor IR que borre el cache y se mantenga a la escucha de nuevo
     }
    }
   //**************
  }
 
-void showTimeFormat(int hora, int minutos){
-  if(hora<10){
-    lcd.print("0"+(String)hora);
-   }else{
-    lcd.print((String)hora);
+
+//Muestra el tiempo en formato de hora
+void showTimeFormat(int hora, int minutos){  
+  if(hora<10){ //Si la hora es menor que 10
+    lcd.print("0"+(String)hora); //Imprimo un cero antes de la hora eje: 09
+   }else{ //sino
+    lcd.print((String)hora); //Imprimo sin ajustes eje: 11
    }
-  lcd.print(":");
-  if(minutos<10){
-    lcd.print("0"+(String)minutos);
-   }else{
-    lcd.print((String)minutos);
+  lcd.print(":"); //Coloco los 2 puntos
+  if(minutos<10){ //Si los minutos son menores a 10
+    lcd.print("0"+(String)minutos); //Imprimo un cero antes del minuto eje: HH:09
+   }else{ //Sino
+    lcd.print((String)minutos); //Imprimo sin ajustes eje:  HH:11
    }
 }
 //End: Funciones creadas para el manejo del tiempo
+
+
+
 //Begin: funciones para el control de alimento
+
+//Funcion para configurar la cantidad de comida a dispensar
 void  setGrams(){
     lcd.clear();
     lcd.setCursor(0,0);
     lcd.print("Comida Disp.:");
     lcd.setCursor(0,1);
-    lcd.print((String)grams+"g 1.Mod 2.Ok");
-    irrecv.resume();
+    lcd.print((String)grams+"g 1.Mod 2.Ok"); //Pregunto si desea modificar la cantidad o no mostrando la cantidad anterior de comida 
+    irrecv.resume(); //Le digo al sensor IR que borre el cache y espere por respuestas
     //***************
-   while(true){
-    if(irrecv.decode(&codigo)){
-    Serial.println(codigo.value,HEX);
-    if(codigo.value==b1){
-     lcd.clear();
+   while(true){ //Mientras el ciclo se repita
+    if(irrecv.decode(&codigo)){ //Y si se presiona boton 
+    Serial.println(codigo.value,HEX); //Imprimo el codigo en pantalla, en el serial
+    if(codigo.value==b1){ // Si el boton presionado fue el 1
+     lcd.clear(); 
      lcd.setCursor(0,0);
      lcd.print("Gramos: 0000g");
      lcd.setCursor(0,1);
      lcd.print("Ok para Guardar");
      lcd.setCursor(8,0);
-      lcd.blink();
-      delay(1000);
-     getGrams();
+      lcd.blink(); //Imprimo lo anterior en la lcd y le digo que el cursor debe parpadear
+      delay(1000); //Espero 1 segundo
+     getGrams(); //Y le digo que vaya a la funcion que 
       break;
     }
     if(codigo.value==b2){break;}
