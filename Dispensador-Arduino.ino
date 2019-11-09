@@ -306,7 +306,7 @@ void  setGrams(){
     lcd.setCursor(0,0);
     lcd.print("Comida Disp.:");
     lcd.setCursor(0,1);
-    lcd.print((String)grams+"g 1.Mod 2.Ok"); //Pregunto si desea modificar la cantidad o no mostrando la cantidad anterior de comida 
+    lcd.print((String)((grams+10)*2)+"g 1.Mod 2.Ok"); //Pregunto si desea modificar la cantidad o no mostrando la cantidad anterior de comida 
     irrecv.resume(); //Le digo al sensor IR que borre el cache y espere por respuestas
     //***************
    while(true){ //Mientras el ciclo se repita
@@ -343,9 +343,10 @@ void  setGrams(){
     Serial.print(codigo.value,HEX);
     if(codigo.value==Bok){
       grams=0;
-      grams=grams+GM+GC+GD+GU;
+      grams=((grams+GM+GC+GD+GU)/2)-10;
       EEPROM.put(7,grams);
       lcd.noBlink();
+      Serial.print("Gramos guardados: ");
       Serial.print(grams);
       break;
     }
@@ -394,9 +395,9 @@ void gramsCheck(){
   int peso=0;
   while(peso<grams){
   peso=balanza.get_units(1);
-  Serial.print("Peso: ");
-  Serial.print(peso);
-  Serial.println(" g");
+  //Serial.print("Peso: ");
+  //Serial.print(peso);
+  //Serial.println(" g");
   }
   m1.write(0);
 }
