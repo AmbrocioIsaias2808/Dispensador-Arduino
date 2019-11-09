@@ -1,6 +1,6 @@
  ## Materiales hasta el momento:
 
-**Principales: **
+**Principales:**
 
 * Arduino Uno
 * Modulo de reloj DS1302 con librería <virtuabotixRTC.h>
@@ -15,7 +15,7 @@
   	* https://www.youtube.com/watch?v=MpITkBA50k8
 * Buzzer
 
-**Adicionales: **
+**Adicionales:**
 
 * Protoboard
 * Led: solo para comprobar si esta recibiendo corriente el servomotor.
