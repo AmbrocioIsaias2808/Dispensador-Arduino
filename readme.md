@@ -26,10 +26,7 @@
 **Diagrama Eléctrico:**
 
 
-
-<p align="center"><img src="DiagramaElectrico.png" alt="image-20191109131659078" width="75%" /></p>
-
-
+<p align="center"><img src="DiagramaElectrico.PNG" alt="DiagramaElectrico" width="75%" /></p>
 
 ---
 
