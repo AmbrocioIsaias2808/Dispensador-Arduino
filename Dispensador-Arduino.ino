@@ -121,10 +121,10 @@ void GetTime(){
         lcd.setCursor(aux,0); //En tal posicion de tal fila
         lcd.print("0"); //Imprimo un cero
        }else{ //Por el contrario
-               if(aux==6){ //Si es la pocision 6
+               if(aux==6){ //Si es la posicion 6
                   Dh=toNum(codigo.value)*10; //El codigo hexadecimal convertido en numero multiplicado por 10 lo guardo en Decenas de Hora
                }
-               if(aux==7){ //Si es la pocision 7
+               if(aux==7){ //Si es la posicion 7
                 Uh = toNum(codigo.value); //El codigo hexadecimal convertido en numero lo guardo en Unidades de hora
                 }
                 if(aux==9){ //Si es la posicion 9
@@ -321,101 +321,119 @@ void  setGrams(){
      lcd.setCursor(8,0);
       lcd.blink(); //Imprimo lo anterior en la lcd y le digo que el cursor debe parpadear
       delay(1000); //Espero 1 segundo
-     getGrams(); //Y le digo que vaya a la funcion que 
-      break;
+     getGrams(); //Y le digo que vaya a la funcion que lee los gramos introducidos por medio del control remoto
+      break; //Despues termina el ciclo while
     }
-    if(codigo.value==b2){break;}
-    delay(50);
-    irrecv.resume();
+    if(codigo.value==b2){break;} //Si el boton presionado fue el 2
+    delay(50); //Espera 50 milisengundos
+    irrecv.resume(); //Despues borro el cache del sensor IR y le digo que resuma la escucha de otras entradas
     }
    }
-   lcd.clear();
+   lcd.clear(); //Limpio el contenido de la pantalla lcd
   //**************
   }
 
  void getGrams(){
-  aux=8;
-  int GM=0, GC=0, GD=0, GU=0;
-  irrecv.resume();
+  aux=8; //Coloco la variable auxiliar en 8, esta variable ayuda a distinguir la posicion del curso.
+  int GM=0, GC=0, GD=0, GU=0; 
+  /*
+  GM variable para almacenar los Millares de los gramos
+  GC variable para almacenar las centenas de los gramos
+  GD variable para almacenar las decenas de los gramos
+  GU variable para almacenar las unidades de los gramos 
+  */
+  irrecv.resume(); // borro el cache del sensor IR y le digo que resuma la escucha de otras entradas
   //***************
-   while(true){
-    if(irrecv.decode(&codigo)){
-    Serial.print(codigo.value,HEX);
-    if(codigo.value==Bok){
-      grams=0;
-      grams=((grams+GM+GC+GD+GU)/2)-10;
-      EEPROM.put(7,grams);
-      lcd.noBlink();
-      Serial.print("Gramos guardados: ");
-      Serial.print(grams);
-      break;
+   while(true){ //Mientras el ciclo se repita
+    if(irrecv.decode(&codigo)){ //Y si recibe efectivamente algun valor desde el control
+    Serial.print(codigo.value,HEX); //Imprime el código por el serial
+    if(codigo.value==Bok){ //Si el botón presionado es OK
+      grams=0; //La variable gramos se coloca a 0
+      grams=((grams+GM+GC+GD+GU)/2)-10; //Despues se suman los gramos + GM+GC+GD+GU, esta suma se divide entre dos y se le resta 10 unidades
+      //Esta operación se realiza de tal manera en orden de ajustar la medición mas precisa posible de comida que lee la balanza
+      EEPROM.put(7,grams); //El valor se guarda en la EEPROM
+      lcd.noBlink(); //Le decimos al LCD que el cursor debe de dejar de parpadear
+      Serial.print("Gramos guardados: "); //Se muestra el mensaje por serial
+      Serial.print(grams); //Indicando la información guardada
+      break; //Y rompe el ciclo
     }
-    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3 ||codigo.value==b4 || codigo.value==b5 || codigo.value==b6 ||codigo.value==b7 || codigo.value==b8 || codigo.value==b9 ||codigo.value==b0){
-       lcd.print(String(toNum(codigo.value)));
 
-               if(aux==8){
-                  GM=toNum(codigo.value)*1000;
+    //El siguiente if esta a la escucha de que alguno de los botones numericos del control sean presionados
+    if(codigo.value==b1 || codigo.value==b2 || codigo.value==b3 ||codigo.value==b4 || codigo.value==b5 || codigo.value==b6 ||codigo.value==b7 || codigo.value==b8 || codigo.value==b9 ||codigo.value==b0){
+       lcd.print(String(toNum(codigo.value))); //Si se presiona algun valor valido imprime el pantalla el numero correspondiente
+
+               if(aux==8){ //Si el cursor esta en la pocisión 8
+                  GM=toNum(codigo.value)*1000; //Se calculan los Millares de unidad
                }
-               if(aux==9){
-                GC = toNum(codigo.value)*100;
+               if(aux==9){ //Si el cursor esta en la pocisión 9
+                GC = toNum(codigo.value)*100; //Se calculan las centenas
                 }
-                if(aux==10){
-                  GD=toNum(codigo.value)*10;
+                if(aux==10){ //Si el cursor esta en la pocisión 10
+                  GD=toNum(codigo.value)*10; //Se calculan las decenas
                }
-               if(aux==11){
-                  GU = toNum(codigo.value);
+               if(aux==11){ //Si el cursor esta en la pocisión 11
+                  GU = toNum(codigo.value); //Se guardan las unidades
                 }
        
-       lcd.setCursor(aux,0);
+       lcd.setCursor(aux,0); //despues de ello el valor leido se imprime en pantalla en la posicion indicada
     }
-    if(codigo.value==bDerecha){
-       aux++; 
-       lcd.setCursor(aux,0);
+    if(codigo.value==bDerecha){ //Si se presiona el botón derecha
+       aux++; //La variable auxiliar se aumenta
+       lcd.setCursor(aux,0); //Y se desplaza el cursor
     }
-    if(codigo.value==bIzquierda){
-       aux--; 
-       lcd.setCursor(aux,0);
+    if(codigo.value==bIzquierda){//Si es izquierda
+       aux--; //Se disminuye el valor
+       lcd.setCursor(aux,0); //Y se desplaza el cursor
     }
-       if(aux==12){
-          aux=11;
-          lcd.setCursor(aux,0); }
-       if(aux==7){
-          aux=8; 
-          lcd.setCursor(aux,0);
+       if(aux==12){ //Si el cursor (aux) es == 12
+          aux=11; //Lo retengo en la pocisión 11
+          lcd.setCursor(aux,0); } //y lo coloco en pantalla
+       if(aux==7){ //Si el cursor (aux) es ==7
+          aux=8;  //Lo retengo en la pocisión 8
+          lcd.setCursor(aux,0); //Y coloco el cursor
        }
     
-    delay(50);
-    irrecv.resume();
+    delay(50); //Espero 50 milisegundos
+    irrecv.resume(); //Bueno, ya lo repeti muchas veces jejejeje
     }
    }
   //**************
  }
 
-void gramsCheck(){
-  int peso=0;
-  while(peso<grams){
-  peso=balanza.get_units(1);
-  //Serial.print("Peso: ");
-  //Serial.print(peso);
-  //Serial.println(" g");
+void gramsCheck(){  //Esta función revisa al momento de dispensar, si ya se ha dispensado la cantidad adecuada de alimento
+  int peso=0; //De manera que al ser invocada se declara una variable peso igualada a 0
+  while(peso<=grams){ //Y entra el while, este se encargara de medir la cantidad de comida que es leida por la celda de carga
+    //Mientras el peso leido sea menor o igual a la cantidad de alimento que se programo
+  peso=balanza.get_units(1); //Estara leyendo continuamente la información tomando 1 sola muestra.
+
+  /*
+  la función get_units(muestras) toma la cantidad de muestras indicada del sensor y una vez tomada devuelve un valor promedio
+  En este caso le señalo que solo tome una muestra, pues de otro modo se demora mucho tiempo en el proceso
+  */
+  
+  //Serial.print("Peso: "); //Estas lineas imprimian 
+  //Serial.print(peso);     //El peso leido
+  //Serial.println(" g");   //En el serial
   }
-  m1.write(0);
+  m1.write(0); //Una vez que se rompio el ciclo coloco el servomotor en 0° para cerrar la compuerta
 }
 //End: funciones para el control de alimento
+
+
 //Begin: Funciones para el manejo de servo
-void alimentar(){
-  lcd.clear();
-  lcd.setCursor(0,0);
-  lcd.print("Hora de comer");
-  lcd.setCursor(0,1);
-  lcd.print("Alimentando");
-  m1.write(60);
-  gramsCheck();
-  lcd.clear();
+void alimentar(){ //Al momento de que llega la hora de la comida
+  lcd.clear(); //Se limpia el contenido de la pantalla 
+  lcd.setCursor(0,0); //Se posiciona el cursor
+  lcd.print("Hora de comer"); //Se imprime este mensaje 
+  lcd.setCursor(0,1); //Posiono el cursor
+  lcd.print("Alimentando"); //Imprimo este mensaje
+  m1.write(60); //Abro la compuerta colocando el servo en 60°
+  gramsCheck(); //Mando llamar a esta función
+  lcd.clear();//una vez se regrese el control la compuerta debe estar cerrada y se limpia la pantalla
   }
 //End:  Funciones para el manejo de servo
 
-void bip(){
+void bip(){ //Hace sonar el buzzer
   digitalWrite(buzzer,HIGH);
   delay(500);
   digitalWrite(buzzer,LOW); 
@@ -425,83 +443,108 @@ void bip(){
   digitalWrite(buzzer,LOW);
 }
 
-void InicializeData(){
-  int eeAddress=0;
-  for (int alarma=0;alarma<3;alarma++){
-    eeAddress++;
-    for(int hora=0; hora<2; hora++){ 
-      alarm[alarma][hora]=EEPROM.read(eeAddress);
-      if(hora<1){eeAddress++;}
+void InicializeData(){ //Esta función carga los valores de la EEPROM a las variables de trabajo
+  int eeAddress=0; //Coloco esta variable en 0 simbolizando la primer celda de memoria de la EEPROM
+  for (int alarma=0;alarma<3;alarma++){ //En este momento recorro el arreglo de las alarmas
+    eeAddress++; //Y cada vez que repita aumento la posición de memoria de la EEPROM a leer
+    for(int hora=0; hora<2; hora++){  //Al entrar a este for, este recorrera el interno de Alarma, recordemos que este es bidimencional
+
+      /*
+      El arrar alarma por tanto consta de 3 filas y dos columnas (para mi es como un array dentro de otro array)
+               |  Hora    |   Min      |
+      Alarma 1 |          |            |
+      Alarma 2 |          |            |
+      Alarma 3 |          |            |
+
+      El chiste es que este for interno recorre cada columna de cada fila y va almacenando dichos valores en la celda correspondiente
+      
+      */
+
+      //De esta manera, en la primera pasada
+      alarm[alarma][hora]=EEPROM.read(eeAddress); //Debo guardar en la columna Hora lo almacenado en la posicion correspondiente de la EEPROM
+      if(hora<1){eeAddress++;} //Despues, si es que estamos en la primera pasada, aumentamos la posición que deberemos leer de la EEPROM
+      //Para que al repetirse el for se lea de la EEPROM los Minutos de la alarma correspondiente 
     }
   }
-  grams=EEPROM.get(7,  grams); 
+  grams=EEPROM.get(7,  grams);  //Una vez que terminamos de cargar las alarmas, es en ese entonces que cargamos de la EEPROM los gramos de alimento a dispensar.
 }
-
+// AL FIN EL SETUP, perdon pero llevo varios dias comentando el codigo XD
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
-  if(EEPROM.read(0)==255){
-    EEPROM.write(0,0);
-  }else{
-    Serial.println("Not necessary");  
+  Serial.begin(9600); //Le idico a arduino que debe establecer comunicación con el monitor serial a una frecuencia de 9600
+  if(EEPROM.read(0)==255){ //Si es la primera vez que se enciende el dispensador las celdas de la EEPROM deben de contener un valor numerico de 255
+    EEPROM.write(0,0); //Por tanto para evitar problemas a la hora de cargar los datos de la EEPROM por primera vez
+      
+    //*?
+    for(int i=1;i<8,i++){
+       EEPROM.write(0,0);//Coloco un cero en todas las celdas de memoria que voy a estar ocupando
+    }
+    //La primera celda (0) no la utilizare para nada mas que para detectar si es la primer encendida del dispensador
+
+    
+  }else{ //Si no lo es
+    Serial.println("Not necessary");  //No sera necesario hacer el proceso anterior
   }
-  m1.attach(PINSERVO,PULSOMIN,PULSOMAX);
-  m1.write(0);
-  InicializeData();
+  m1.attach(PINSERVO,PULSOMIN,PULSOMAX); //Despues coloco las instrucciones para controlar el servomotor
+  m1.write(0); //Y le digo que apenas encendiendo la compuerta debe estar cerrada
+  InicializeData(); //Despues cargo las variables almacenadas de la EEPROM a las variables de trabajo
   //Ajustes del Control Remoto
-  irrecv.enableIRIn(); //habilito el sensor
+  irrecv.enableIRIn(); //habilito el sensor infrarrojo
   //Ajustes de la pantalla led:
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0,0);
-  myRTC.setDS1302Time(00,45, 15, 0, 1, 1, 2019);
-  TimeSetup();
-  balanza.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN);
-  balanza.read();
+  lcd.init(); //Indico a arduino que trabajare con un modulo LCD
+  lcd.backlight(); //Indico que debe tener encendida la luz de fondo
+  lcd.clear(); //Y que antes de cualquier cosa debe limpiar la pantalla
+  lcd.setCursor(0,0); //Y colocar el cursor en la primer linea en la primer columna
+  myRTC.setDS1302Time(00,45, 15, 0, 1, 1, 2019); // Y configuro el reloj a las 15:45 en enero de 2019 (la fecha no es importante)
+  //Lo anterior solo para que el modulo de reloj empieze a funcionar
+  TimeSetup(); //Luego mando llamar esta función donde se pregunta si se desea ajustar manualmente la hora
+  balanza.begin(LOADCELL_DOUT_PIN, LOADCELL_SCK_PIN); //Habilito tambien el uso de la celda de carga
+  balanza.read(); //De inicio no debe colocarse nada sobre la balanza, pues de esta manera configuramos su sistema de mediciones y despues
   balanza.set_scale(241.3971937); // Establecemos la escala
   balanza.tare(20);  //El peso actual es considerado Tara. 
   pinMode(buzzer , OUTPUT);  //definir pin como salida
-  delay(1000);
+  delay(1000);//Espero un segundo antes de continuar
 }
 
-void loop() {
+void loop() { //Y llegamos al loop principal
   // put your main code here, to run repeatedly:
-  myRTC.updateTime();
-  TIME[0]=myRTC.hours; TIME[1]=myRTC.minutes; TIME[2]=myRTC.seconds;
+  myRTC.updateTime(); //Aquí le digo al reloj que actualice el valor de tiempo
+  TIME[0]=myRTC.hours; TIME[1]=myRTC.minutes; TIME[2]=myRTC.seconds; //Para guardar dicho valor en la variables correspondientes
   // Begin: Se imprime la hora con formato en la pantalla lcd
-  if((int)TIME[2]==0){lcd.clear();}
-  lcd.setCursor(0,0);
-  lcd.print("Tiempo: ");
-  showTimeFormat(TIME[0],TIME[1]);
-  lcd.print(":");
-  if((int)TIME[2]<10){
-  lcd.print("0"+(String)TIME[2]);
-  }else
+  if((int)TIME[2]==0){lcd.clear();} //Si los segundos son iguales a 0
+  lcd.setCursor(0,0); //Posiciono el cursor
+  lcd.print("Tiempo: "); //Imprimo esta letania
+  showTimeFormat(TIME[0],TIME[1]); //Y mando a llamar la función que me formatea la hora y la imprimira en pantalla (solo imprime hora:minutos)
+  lcd.print(":"); //Despues imprimo el : para separar ahora los segundos
+  if((int)TIME[2]<10){ //Y si los segundos son menores que 10
+  lcd.print("0"+(String)TIME[2]); //Agrego un 0 antes del numero e imprimo en pantalla
+  }else //Por el contrario
   {
-  lcd.print((String)TIME[2]);
+  lcd.print((String)TIME[2]); //Solo imprimo en pantalla los segundos
   }
-  // End: Se imprime la hora con formato en la pantalla lcd
+  // End: Se imprime la hora con formato en la pantalla lc
+
+
+  //Ahora, si el tiempo actual coincide con alguna de las alarmas
   if(         ((alarm[0][0] == (int)TIME[0]) && (alarm[0][1]== (int)TIME[1]) && (int)TIME[2]==0)     ||   ((alarm[1][0] == (int)TIME[0]) && (alarm[1][1]== (int)TIME[1]) && (int)TIME[2]==0)           ||        ((alarm[2][0] == (int)TIME[0]) && (alarm[2][1]== (int)TIME[1]) && (int)TIME[2]==0)                 ){
-   bip();
-   alimentar();
-   bip();
+   bip(); //hago sonar el buzzer
+   alimentar(); //Dispenso la comida
+   bip(); //Y terminado el proceso hago sonar el buzzer
    }
-   if(irrecv.decode(&codigo)){
-    Serial.println(codigo.value,HEX);
-    if(codigo.value==bGato){
-      setTime();
+   if(irrecv.decode(&codigo)){ //Ademas me mantendo a la escucha de recibir comandos del control remoto
+    Serial.println(codigo.value,HEX); //Si recibo un comando imprimo el codigo en pantalla
+    if(codigo.value==bGato){ //Si el boton presionado es GATO
+      setTime(); //Entro a la función de configuración de hora
       }
-    if(codigo.value==bAsterisco){
+    if(codigo.value==bAsterisco){ //Por el contrario, si se presiona el asterico
       /*Para las alarmas*/
-      setAlarms();
+      setAlarms(); //Entro a la función de configuración de alarmas
       }
-    if(codigo.value==b0){
-      /*Para las alarmas*/
-      setGrams();
+    if(codigo.value==b0){ //Y si es el 0
+      setGrams(); // A la configuración de la cantidad de alimento a dispensar
       }
-    delay(50);
-    irrecv.resume();
+    delay(50); //Antes de continuar espero 50 milisegundos
+    irrecv.resume(); //Y borro el cache e indico que debe mantenerse a la escucha de la introducción de otro código
     }
    
   // Un pequeño delay para no repetir y leer más facil
