@@ -476,7 +476,7 @@ void setup() {
     EEPROM.write(0,0); //Por tanto para evitar problemas a la hora de cargar los datos de la EEPROM por primera vez
       
     //*?
-    for(int i=1;i<8,i++){
+    for(int i=1;i<8;i++){
        EEPROM.write(0,0);//Coloco un cero en todas las celdas de memoria que voy a estar ocupando
     }
     //La primera celda (0) no la utilizare para nada mas que para detectar si es la primer encendida del dispensador

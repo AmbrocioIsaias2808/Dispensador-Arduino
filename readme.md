@@ -3,8 +3,8 @@
 **Principales:**
 
 * Arduino Uno
-* Modulo de reloj DS1302 con librería <virtuabotixRTC.h>
-* Sensor infrarrojo y control remoto
+* Modulo de reloj DS1302 con librería <virtuabotixRTC.h> (libreria: https://github.com/chrisfryer78/ArduinoRTClibrary)
+* Sensor infrarrojo y control remoto (https://naylampmechatronics.com/blog/36_Tutorial-Arduino-y-control-remoto-Infrarrojo.html libreria: https://github.com/z3t0/Arduino-IRremote)
 * Servomotor MG995 (Necesita alimentación externa)
 * Pantalla LCD  con modulo I2C
 * Modulo de marga y sensor HX711. **Notas:**
@@ -27,7 +27,6 @@
 
 
 <p align="center"><img src="DiagramaElectrico.PNG" alt="DiagramaElectrico" width="75%" /></p>
-
 ---
 
 **Descripción:** al momento ya es posible....
